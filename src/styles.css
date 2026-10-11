@@ -54,3 +54,20 @@ body { background:radial-gradient(circle at 80% -10%,rgba(91,61,150,.2),transpar
 .admin-login-card span { display:block; margin-top:18px; font-size:12px; color:var(--muted); }
 .error-text { display:block; color:#ff8b8b; margin-top:12px; }
 @media(max-width:650px) { .main-nav { background:#111827; } }
+.event-title,.teams-button,.more-btn,.all-markets { color:inherit; text-decoration:none; }
+.event-title { flex:1; }
+.teams-button { display:flex; }
+.more-btn { padding:8px 10px; }
+.market,.all-markets,.sport-tab,.outline-btn,.hero-btn,.place-btn,.add-btn,.quick-amount,.topup-options button { min-height:38px; border:1px solid rgba(255,255,255,.14); }
+.market,.all-markets { background:#1b2940; color:#dbe3f1; }
+.market strong,.all-markets strong { color:#f5f7fb; }
+.market:hover,.selected-market,.all-markets:hover { background:#3a315f; border-color:#d2b269; color:#fff; }
+.sport-tab { background:#172238; color:#b6c0d1; border:1px solid rgba(255,255,255,.1); }
+.sport-tab.selected { background:#d2b269; color:#101010; }
+.outline-btn,.hero-btn,.quick-amount { color:#f5f7fb; background:#18263b; }
+.outline-btn:hover,.hero-btn:hover,.quick-amount:hover { background:#2a3a57; border-color:#d2b269; }
+.place-btn,.add-btn { border:0; font-weight:700; }
+.topup-options { display:flex; gap:8px; flex-wrap:wrap; margin:18px 0 8px; }
+.topup-options button { flex:1; min-width:92px; border-radius:8px; background:#1b2940; color:#f5f7fb; }
+.topup-options button:hover { background:#3a315f; border-color:#d2b269; }
+.admin-page { border-top:1px solid transparent; }

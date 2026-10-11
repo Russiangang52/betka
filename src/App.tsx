@@ -63,7 +63,7 @@ const upcomingEvents: Event[] = [
 const money = (value: number) => `${value.toLocaleString('ru-RU')} ₽`
 
 function App() {
-  const [tab, setTab] = useState<Tab>('sports')
+  const [tab, setTab] = useState<Tab>(() => new URLSearchParams(window.location.search).get('admin') === '1' ? 'admin' : 'sports')
   const [sport, setSport] = useState<Sport>('Все')
   const [liveEvents, setLiveEvents] = useState<Event[]>(upcomingEvents)
   const [apiState, setApiState] = useState<'demo' | 'loading' | 'live'>('demo')
@@ -77,7 +77,6 @@ function App() {
   const [notice, setNotice] = useState('')
   const [mobileMenu, setMobileMenu] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
-  const [adminAuthorized, setAdminAuthorized] = useState(() => sessionStorage.getItem('mexbet-admin') === '1')
 
   useEffect(() => { localStorage.setItem('pulse-balance', String(balance)) }, [balance])
   useEffect(() => { localStorage.setItem('pulse-transactions', JSON.stringify(transactions)) }, [transactions])
@@ -138,8 +137,19 @@ function App() {
     setTransactions((list) => [{ id: `ADM-${Date.now().toString().slice(-5)}`, type: amount > 0 ? 'Пополнение' : 'Ставка', amount, reason, date: 'Только что' }, ...list])
     setNotice('Баланс обновлён, запись добавлена в журнал')
   }
+  const topUpBalance = (amount: number) => {
+    adjustBalance(amount, 'Пользовательское виртуальное пополнение')
+    setTab('dashboard')
+  }
   const openEvent = (event: Event) => {
-    window.open(`${window.location.pathname}#event=${event.id}`, '_blank', 'noopener,noreferrer')
+    const url = new URL(window.location.href)
+    url.search = ''
+    url.hash = `event=${event.id}`
+    const link = document.createElement('a')
+    link.href = url.toString()
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    link.click()
   }
 
   return (
@@ -150,7 +160,6 @@ function App() {
           <nav className={mobileMenu ? 'main-nav open' : 'main-nav'}>
             <button className={tab === 'sports' ? 'nav-item active' : 'nav-item'} onClick={() => { setTab('sports'); setMobileMenu(false) }}><Trophy size={17} /> События</button>
             <button className={tab === 'dashboard' ? 'nav-item active' : 'nav-item'} onClick={() => { setTab('dashboard'); setMobileMenu(false) }}><LayoutDashboard size={17} /> Мой профиль</button>
-            <button className={tab === 'admin' ? 'nav-item active' : 'nav-item'} onClick={() => { setTab('admin'); setMobileMenu(false) }}><ShieldCheck size={17} /> Админ-панель</button>
           </nav>
           <div className="header-actions"><button className="icon-btn" aria-label="Уведомления"><Bell size={18} /><i /></button><div className="header-balance"><span>Баланс</span><strong>{money(balance)}</strong></div><div className="avatar">АИ</div><button className="mobile-menu" onClick={() => setMobileMenu(!mobileMenu)}><Menu /></button></div>
         </div>
@@ -158,8 +167,8 @@ function App() {
 
       <main className="page">
         {tab === 'sports' && <SportsPage events={filteredEvents} apiState={apiState} sport={sport} setSport={setSport} query={query} setQuery={setQuery} slip={slip} addToSlip={addToSlip} openEvent={openEvent} removeFromSlip={removeFromSlip} stake={stake} setStake={setStake} totalOdds={totalOdds} potentialWin={potentialWin} placeBet={placeBet} />}
-        {tab === 'dashboard' && <Dashboard balance={balance} transactions={transactions} onNavigate={setTab} />}
-        {tab === 'admin' && (adminAuthorized ? <Admin balance={balance} transactions={transactions} adjustBalance={adjustBalance} /> : <AdminLogin onAuthorize={() => { sessionStorage.setItem('mexbet-admin', '1'); setAdminAuthorized(true) }} />)}
+        {tab === 'dashboard' && <Dashboard balance={balance} transactions={transactions} onNavigate={setTab} onTopUp={topUpBalance} />}
+        {tab === 'admin' && <Admin balance={balance} transactions={transactions} adjustBalance={adjustBalance} />}
       </main>
       <footer className="footer"><span>© 2026 MEXBET Demo</span><span><LockKeyhole size={13} /> Только виртуальные ставки · Без денежных операций</span><span>Правила демо <CircleHelp size={14} /></span></footer>
       {notice && <div className="toast"><span className="toast-check">✓</span>{notice}<button onClick={() => setNotice('')}><X size={15} /></button></div>}
@@ -185,7 +194,8 @@ function SportsPage(props: { events: Event[]; apiState: 'demo' | 'loading' | 'li
 }
 
 function EventCard({ event, selected, onSelect, onOpen }: { event: Event; selected?: Slip; onSelect: (market: { label: string; value: string }) => void; onOpen: () => void }) {
-  return <article className={event.featured ? 'event-card featured-card' : 'event-card'}><div className="event-meta"><span className="sport-icon">{event.icon}</span><button className="event-title" onClick={onOpen}><small>{event.league}</small><strong>{event.time} <i>•</i> {event.status || 'Прематч'}</strong></button>{event.featured && <span className="hot-badge">🔥 Популярное</span>}<button className="more-btn" onClick={onOpen}>•••</button></div><button className="teams teams-button" onClick={onOpen}><div><span>{event.home.slice(0, 2).toUpperCase()}</span><strong>{event.home}</strong></div><div className="versus">VS</div><div className="away"><strong>{event.away}</strong><span>{event.away.slice(0, 2).toUpperCase()}</span></div></button><div className="markets">{event.markets.map((market) => <button key={market.key} className={selected?.market === market.label ? 'market selected-market' : 'market'} onClick={() => onSelect(market)}><span>{market.label}</span><strong>{market.value}</strong>{selected?.market === market.label && <i>✓</i>}</button>)}<button className="all-markets" onClick={onOpen}>Все исходы <ChevronRight size={14} /></button></div></article>
+  const href = `${window.location.pathname}#event=${event.id}`
+  return <article className={event.featured ? 'event-card featured-card' : 'event-card'}><div className="event-meta"><span className="sport-icon">{event.icon}</span><a className="event-title" href={href} target="_blank" rel="noopener noreferrer"><small>{event.league}</small><strong>{event.time} <i>•</i> {event.status || 'Прематч'}</strong></a>{event.featured && <span className="hot-badge">🔥 Популярное</span>}<a className="more-btn" href={href} target="_blank" rel="noopener noreferrer">•••</a></div><a className="teams teams-button" href={href} target="_blank" rel="noopener noreferrer"><div><span>{event.home.slice(0, 2).toUpperCase()}</span><strong>{event.home}</strong></div><div className="versus">VS</div><div className="away"><strong>{event.away}</strong><span>{event.away.slice(0, 2).toUpperCase()}</span></div></a><div className="markets">{event.markets.map((market) => <button key={market.key} className={selected?.market === market.label ? 'market selected-market' : 'market'} onClick={() => onSelect(market)}><span>{market.label}</span><strong>{market.value}</strong>{selected?.market === market.label && <i>✓</i>}</button>)}<a className="all-markets" href={href} target="_blank" rel="noopener noreferrer">Все исходы <ChevronRight size={14} /></a></div></article>
 }
 
 function BetSlip({ slip, remove, stake, setStake, totalOdds, potentialWin, placeBet }: { slip: Slip[]; remove: (id: number) => void; stake: string; setStake: (s: string) => void; totalOdds: number; potentialWin: number; placeBet: () => void }) {
@@ -200,24 +210,14 @@ function EventDetails({ event, selected, onSelect, onClose }: { event: Event; se
   return <div className="modal-backdrop" onClick={onClose}><section className="event-modal" onClick={(e) => e.stopPropagation()}><button className="modal-close" onClick={onClose}><X size={19} /></button><div className="modal-kicker">{event.icon} {event.league}</div><h2>{event.home} <span>vs</span> {event.away}</h2><p className="modal-time">{event.time} · {event.status || 'Прематч'} · {event.source || 'Демо-линия'}</p><h3>Основные исходы</h3><div className="detail-markets">{event.markets.map((market) => <button key={market.key} className={selected?.market === market.label ? 'detail-market selected-market' : 'detail-market'} onClick={() => onSelect(market)}><span>{market.label}</span><strong>{market.value}</strong></button>)}</div><h3>Дополнительные рынки</h3><div className="detail-markets">{extraMarkets.map((market) => <button key={market.key} className="detail-market" onClick={() => onSelect(market)}><span>{market.label}</span><strong>{market.value}</strong></button>)}</div><button className="modal-action" onClick={onClose}>Готово</button></section></div>
 }
 
-function Dashboard({ balance, transactions, onNavigate }: { balance: number; transactions: Transaction[]; onNavigate: (tab: Tab) => void }) {
-  return <div className="dashboard"><div className="eyebrow"><Activity size={14} /> ЛИЧНЫЙ КАБИНЕТ <span className="eyebrow-divider" /> Добро пожаловать, Алексей</div><div className="page-heading"><div><h1>Мой профиль</h1><p>Следите за ставками и результатами в одном месте</p></div><button className="outline-btn" onClick={() => onNavigate('sports')}><Trophy size={16} /> К событиям</button></div><div className="stats-grid"><div className="balance-card"><div className="stat-top"><span>Доступный баланс</span><Wallet size={18} /></div><strong>{money(balance)}</strong><p><span className="positive">+12.4%</span> за последние 30 дней</p><div className="balance-chart"><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /></div></div><div className="stat-card"><span>Активных ставок</span><strong>3</strong><p><span className="dot-blue" /> 2 ожидают расчёта</p><div className="stat-icon"><ClipboardList size={19} /></div></div><div className="stat-card"><span>Результат за месяц</span><strong className="positive">+4 280 ₽</strong><p><ArrowUpRight size={14} className="positive" /> ROI 18.6%</p><div className="stat-icon green"><BarChart3 size={19} /></div></div></div><div className="dashboard-grid"><section className="panel"><div className="panel-heading"><div><h2>История операций</h2><p>Последние изменения демо-баланса</p></div><button>Вся история <ChevronRight size={14} /></button></div><div className="transaction-list">{transactions.slice(0, 6).map((transaction) => <div className="transaction" key={transaction.id}><div className={transaction.amount > 0 ? 'transaction-icon green' : 'transaction-icon'}>{transaction.amount > 0 ? <ArrowDownLeft size={17} /> : <ArrowUpRight size={17} />}</div><div className="transaction-main"><strong>{transaction.type}</strong><span>{transaction.reason}</span></div><div className={transaction.amount > 0 ? 'transaction-amount positive' : 'transaction-amount'}>{transaction.amount > 0 ? '+' : ''}{money(transaction.amount)}</div><time>{transaction.date}</time></div>)}</div></section><section className="panel quick-panel"><div className="panel-heading"><div><h2>Быстрые действия</h2><p>Часто используемые разделы</p></div></div><button onClick={() => onNavigate('sports')}><span className="quick-icon purple"><Trophy size={18} /></span><span><strong>Найти событие</strong><small>Выбрать матч и коэффициент</small></span><ChevronRight size={16} /></button><button onClick={() => onNavigate('admin')}><span className="quick-icon orange"><Plus size={18} /></span><span><strong>Пополнить демо-баланс</strong><small>Доступно только в демо</small></span><ChevronRight size={16} /></button></section></div></div>
+function Dashboard({ balance, transactions, onNavigate, onTopUp }: { balance: number; transactions: Transaction[]; onNavigate: (tab: Tab) => void; onTopUp: (amount: number) => void }) {
+  return <div className="dashboard"><div className="eyebrow"><Activity size={14} /> ЛИЧНЫЙ КАБИНЕТ <span className="eyebrow-divider" /> Добро пожаловать, Алексей</div><div className="page-heading"><div><h1>Мой профиль</h1><p>Следите за ставками и результатами в одном месте</p></div><button className="outline-btn" onClick={() => onNavigate('sports')}><Trophy size={16} /> К событиям</button></div><div className="stats-grid"><div className="balance-card"><div className="stat-top"><span>Доступный баланс</span><Wallet size={18} /></div><strong>{money(balance)}</strong><p><span className="positive">+12.4%</span> за последние 30 дней</p><div className="balance-chart"><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /></div></div><div className="stat-card"><span>Активных ставок</span><strong>3</strong><p><span className="dot-blue" /> 2 ожидают расчёта</p><div className="stat-icon"><ClipboardList size={19} /></div></div><div className="stat-card"><span>Результат за месяц</span><strong className="positive">+4 280 ₽</strong><p><ArrowUpRight size={14} className="positive" /> ROI 18.6%</p><div className="stat-icon green"><BarChart3 size={19} /></div></div></div><div className="dashboard-grid"><section className="panel"><div className="panel-heading"><div><h2>История операций</h2><p>Последние изменения баланса</p></div><button>Вся история <ChevronRight size={14} /></button></div><div className="transaction-list">{transactions.slice(0, 6).map((transaction) => <div className="transaction" key={transaction.id}><div className={transaction.amount > 0 ? 'transaction-icon green' : 'transaction-icon'}>{transaction.amount > 0 ? <ArrowDownLeft size={17} /> : <ArrowUpRight size={17} />}</div><div className="transaction-main"><strong>{transaction.type}</strong><span>{transaction.reason}</span></div><div className={transaction.amount > 0 ? 'transaction-amount positive' : 'transaction-amount'}>{transaction.amount > 0 ? '+' : ''}{money(transaction.amount)}</div><time>{transaction.date}</time></div>)}</div></section><section className="panel quick-panel"><div className="panel-heading"><div><h2>Пополнение виртуального баланса</h2><p>Доступно каждому пользователю, без платежей</p></div><Wallet size={20} /></div><div className="topup-options"><button onClick={() => onTopUp(1000)}>+1 000 ₽</button><button onClick={() => onTopUp(5000)}>+5 000 ₽</button><button onClick={() => onTopUp(10000)}>+10 000 ₽</button></div><button onClick={() => onNavigate('sports')}><span className="quick-icon purple"><Trophy size={18} /></span><span><strong>Найти событие</strong><small>Выбрать матч и коэффициент</small></span><ChevronRight size={16} /></button></section></div></div>
 }
 
 function Admin({ balance, transactions, adjustBalance }: { balance: number; transactions: Transaction[]; adjustBalance: (amount: number, reason: string) => void }) {
   const [amount, setAmount] = useState('5000')
   const [reason, setReason] = useState('Тестовое пополнение')
   return <div className="admin-page"><div className="eyebrow"><ShieldCheck size={14} /> CONTROL CENTER <span className="eyebrow-divider" /> Только для локального демо</div><div className="page-heading"><div><h1>Админ-панель</h1><p>Управление виртуальным балансом и аудит действий</p></div><span className="admin-status"><i /> Система в норме</span></div><div className="admin-warning"><ShieldCheck size={19} /><div><strong>Режим демонстрации</strong><p>Все операции выполняются только в браузере и сохраняются в localStorage. Реальных денег и платежей здесь нет.</p></div></div><div className="admin-grid"><section className="admin-adjust"><div className="panel-heading"><div><h2>Корректировка баланса</h2><p>Изменения требуют явного назначения</p></div><Wallet size={20} /></div><div className="current-balance"><span>Текущий баланс пользователя</span><strong>{money(balance)}</strong></div><label className="form-label">Сумма изменения<input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d-]/g, ''))} type="text" /><small>Используйте минус для списания</small></label><label className="form-label">Причина операции<textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} /></label><div className="admin-buttons"><button className="add-btn" onClick={() => adjustBalance(Number(amount), reason)}><Plus size={16} /> Применить изменение</button><button className="quick-amount" onClick={() => setAmount('1000')}>+1 000 ₽</button><button className="quick-amount" onClick={() => setAmount('5000')}>+5 000 ₽</button></div></section><section className="admin-audit"><div className="panel-heading"><div><h2>Журнал аудита</h2><p>Последние действия · только добавление</p></div><ClipboardList size={20} /></div><div className="audit-list">{transactions.slice(0, 7).map((tx) => <div className="audit-row" key={tx.id}><div className="audit-check">✓</div><div><strong>{tx.reason}</strong><span>{tx.id} · {tx.date}</span></div><b className={tx.amount > 0 ? 'positive' : ''}>{tx.amount > 0 ? '+' : ''}{money(tx.amount)}</b></div>)}</div></section></div></div>
-}
-
-function AdminLogin({ onAuthorize }: { onAuthorize: () => void }) {
-  const [pin, setPin] = useState('')
-  const [error, setError] = useState('')
-  const submit = () => {
-    if (pin === (import.meta.env.VITE_ADMIN_PIN || 'MEXBET-ADMIN')) onAuthorize()
-    else setError('Неверный demo-PIN')
-  }
-  return <div className="admin-login"><div className="admin-login-card"><ShieldCheck size={30} /><h1>Закрытая админ-зона</h1><p>Введите demo-PIN владельца платформы. Это не является настоящей защитой для production.</p><input value={pin} onChange={(event) => setPin(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && submit()} placeholder="Demo-PIN" type="password" /><button className="add-btn" onClick={submit}>Войти в админ-панель</button>{error && <small className="error-text">{error}</small>}<span>Локальный demo-PIN по умолчанию: <b>MEXBET-ADMIN</b></span></div></div>
 }
 
 export default App

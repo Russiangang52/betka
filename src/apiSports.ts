@@ -83,34 +83,39 @@ const withLiveOdds = async (event: Event, url: string): Promise<Event> => {
 export async function loadApiSportsEvents(): Promise<Event[]> {
   if (!apiKey) return []
 
-  const date = new Date().toISOString().slice(0, 10)
-  const requests = await Promise.allSettled([
+  const dates = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date()
+    date.setDate(date.getDate() + index)
+    return date.toISOString().slice(0, 10)
+  })
+  const requests = await Promise.all(dates.flatMap((date) => [
     getJson<{ response?: ApiFixture[] }>(`https://v3.football.api-sports.io/fixtures?date=${date}`),
     getJson<{ response?: ApiHockeyGame[] }>(`https://v1.hockey.api-sports.io/games?date=${date}`),
-  ])
-  const football = requests[0].status === 'fulfilled' ? requests[0].value.response || [] : []
-  const hockey = requests[1].status === 'fulfilled' ? requests[1].value.response || [] : []
+  ]).map((request) => request.then((value) => value).catch(() => ({ response: [] }))))
+  const football = requests.filter((_, index) => index % 2 === 0).flatMap((item) => item.response || []) as ApiFixture[]
+  const hockey = requests.filter((_, index) => index % 2 === 1).flatMap((item) => item.response || []) as ApiHockeyGame[]
+  const isUpcoming = (status?: string) => !['FT', 'AET', 'PEN', 'CANC', 'PST', 'ABD'].includes(status || '')
 
   const events = [
     ...football.flatMap((item) => {
       const home = item.teams?.home?.name
       const away = item.teams?.away?.name
-      if (!item.fixture?.id || !home || !away) return []
+      if (!item.fixture?.id || !home || !away || !isUpcoming(item.fixture.status?.short)) return []
       return [formatEvent(item.fixture.id, 'Футбол', item.league?.name || 'Футбол', item.fixture.date, home, away, item.fixture.status?.short)]
     }),
     ...hockey.flatMap((item) => {
       const home = item.teams?.home?.name
       const away = item.teams?.away?.name
-      if (!item.id || !home || !away) return []
+      if (!item.id || !home || !away || !isUpcoming(item.status?.short)) return []
       return [formatEvent(item.id, 'Хоккей', item.league?.name || 'Хоккей', item.date, home, away, item.status?.short)]
     }),
-  ]
+  ].sort((a, b) => a.time.localeCompare(b.time))
 
-  const enriched = await Promise.all(events.slice(0, 12).map((event) => {
+  const enriched = await Promise.all(events.slice(0, 30).map((event) => {
     const endpoint = event.sport === 'Хоккей'
       ? `https://v1.hockey.api-sports.io/odds?game=${event.id}`
       : `https://v3.football.api-sports.io/odds?fixture=${event.id}`
     return withLiveOdds(event, endpoint)
   }))
-  return [...enriched, ...events.slice(12)]
+  return [...enriched, ...events.slice(30)]
 }
