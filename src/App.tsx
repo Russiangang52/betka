@@ -5,21 +5,17 @@ import {
   Minus, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Trophy,
   UserRound, Wallet, X, Zap
 } from 'lucide-react'
+import { loadApiSportsEvents } from './apiSports'
+import type { Event, Sport } from './types'
 
 type Tab = 'sports' | 'dashboard' | 'admin'
-type Sport = 'Все' | 'Футбол' | 'Хоккей' | 'Теннис' | 'Баскетбол'
-type Event = {
-  id: number; sport: Exclude<Sport, 'Все'>; league: string; time: string; status?: string
-  home: string; away: string; icon: string; featured?: boolean
-  markets: { label: string; value: string; key: string }[]
-}
 type Slip = { eventId: number; eventName: string; market: string; odd: number }
 type Transaction = { id: string; type: 'Пополнение' | 'Ставка' | 'Выигрыш'; amount: number; reason: string; date: string }
 
 const events: Event[] = [
-  { id: 1, sport: 'Футбол', league: 'Премьер-лига · Сегодня', time: '19:30', home: 'Арсенал', away: 'Челси', icon: '⚽', featured: true, markets: [{ label: 'П1', value: '1.72', key: 'home' }, { label: 'X', value: '3.85', key: 'draw' }, { label: 'П2', value: '4.60', key: 'away' }] },
+  { id: 1, sport: 'Футбол', league: 'Премьер-лига · Демо', time: '19:30', home: 'Арсенал', away: 'Челси', icon: '⚽', featured: true, source: 'Демо', markets: [{ label: 'П1', value: '1.72', key: 'home' }, { label: 'X', value: '3.85', key: 'draw' }, { label: 'П2', value: '4.60', key: 'away' }] },
   { id: 2, sport: 'Футбол', league: 'Ла Лига · Сегодня', time: '22:00', home: 'Реал Мадрид', away: 'Севилья', icon: '⚽', markets: [{ label: 'П1', value: '1.28', key: 'home' }, { label: 'X', value: '6.20', key: 'draw' }, { label: 'П2', value: '9.50', key: 'away' }] },
-  { id: 3, sport: 'Хоккей', league: 'КХЛ · 5 октября 2026', time: '17:00', home: 'Металлург Мг', away: 'Адмирал', icon: '🏒', featured: true, markets: [{ label: 'П1', value: '1.58', key: 'home' }, { label: 'X', value: '4.70', key: 'draw' }, { label: 'П2', value: '5.10', key: 'away' }] },
+  { id: 3, sport: 'Хоккей', league: 'КХЛ · Демо', time: '17:00', home: 'Металлург Мг', away: 'Адмирал', icon: '🏒', featured: true, source: 'Демо', markets: [{ label: 'П1', value: '1.58', key: 'home' }, { label: 'X', value: '4.70', key: 'draw' }, { label: 'П2', value: '5.10', key: 'away' }] },
   { id: 7, sport: 'Хоккей', league: 'КХЛ · 5 октября 2026', time: '18:00', home: 'Лада', away: 'Шанхай Дрэгонс', icon: '🏒', markets: [{ label: 'П1', value: '2.35', key: 'home' }, { label: 'X', value: '4.20', key: 'draw' }, { label: 'П2', value: '2.55', key: 'away' }] },
   { id: 8, sport: 'Хоккей', league: 'КХЛ · 5 октября 2026', time: '19:30', home: 'Динамо Минск', away: 'Торпедо', icon: '🏒', markets: [{ label: 'П1', value: '1.86', key: 'home' }, { label: 'X', value: '4.40', key: 'draw' }, { label: 'П2', value: '3.55', key: 'away' }] },
   { id: 9, sport: 'Хоккей', league: 'КХЛ · 5 октября 2026', time: '19:30', home: 'Ак Барс', away: 'Локомотив', icon: '🏒', markets: [{ label: 'П1', value: '2.12', key: 'home' }, { label: 'X', value: '4.10', key: 'draw' }, { label: 'П2', value: '2.88', key: 'away' }] },
@@ -41,6 +37,8 @@ const events: Event[] = [
   { id: 4, sport: 'Теннис', league: 'ATP Дубай · Сегодня', time: '18:45', home: 'А. Рублёв', away: 'Д. Медведев', icon: '🎾', markets: [{ label: 'П1', value: '2.10', key: 'home' }, { label: 'П2', value: '1.68', key: 'away' }] },
   { id: 5, sport: 'Баскетбол', league: 'Евролига · Завтра', time: '21:15', home: 'ЦСКА', away: 'Фенербахче', icon: '🏀', markets: [{ label: 'П1', value: '1.82', key: 'home' }, { label: 'П2', value: '2.02', key: 'away' }] },
   { id: 6, sport: 'Футбол', league: 'Серия A · Завтра', time: '21:45', home: 'Интер', away: 'Милан', icon: '⚽', markets: [{ label: 'П1', value: '1.94', key: 'home' }, { label: 'X', value: '3.40', key: 'draw' }, { label: 'П2', value: '3.90', key: 'away' }] },
+  { id: 25, sport: 'Киберспорт', league: 'CS2 · Демо-матч', time: '20:00', home: 'Natus Vincere', away: 'Spirit', icon: '🎮', source: 'Демо', markets: [{ label: 'П1', value: '1.80', key: 'home' }, { label: 'П2', value: '2.05', key: 'away' }] },
+  { id: 26, sport: 'Киберспорт', league: 'Dota 2 · Демо-матч', time: '22:30', home: 'Team Liquid', away: 'Virtus.pro', icon: '🎮', source: 'Демо', markets: [{ label: 'П1', value: '1.68', key: 'home' }, { label: 'П2', value: '2.22', key: 'away' }] },
 ]
 
 const initialTransactions: Transaction[] = [
@@ -54,6 +52,8 @@ const money = (value: number) => `${value.toLocaleString('ru-RU')} ₽`
 function App() {
   const [tab, setTab] = useState<Tab>('sports')
   const [sport, setSport] = useState<Sport>('Все')
+  const [liveEvents, setLiveEvents] = useState<Event[]>(events)
+  const [apiState, setApiState] = useState<'demo' | 'loading' | 'live'>('demo')
   const [query, setQuery] = useState('')
   const [slip, setSlip] = useState<Slip[]>([])
   const [stake, setStake] = useState('500')
@@ -66,9 +66,25 @@ function App() {
 
   useEffect(() => { localStorage.setItem('pulse-balance', String(balance)) }, [balance])
   useEffect(() => { localStorage.setItem('pulse-transactions', JSON.stringify(transactions)) }, [transactions])
+  useEffect(() => {
+    let cancelled = false
+    setApiState('loading')
+    loadApiSportsEvents().then((remoteEvents) => {
+      if (cancelled) return
+      if (remoteEvents.length) {
+        setLiveEvents(remoteEvents)
+        setApiState('live')
+      } else {
+        setApiState('demo')
+      }
+    }).catch(() => {
+      if (!cancelled) setApiState('demo')
+    })
+    return () => { cancelled = true }
+  }, [])
   useEffect(() => { if (notice) { const timer = setTimeout(() => setNotice(''), 3200); return () => clearTimeout(timer) } }, [notice])
 
-  const filteredEvents = useMemo(() => events.filter((event) => {
+  const filteredEvents = useMemo(() => liveEvents.filter((event) => {
     const matchesSport = sport === 'Все' || event.sport === sport
     const matchesQuery = `${event.home} ${event.away} ${event.league}`.toLowerCase().includes(query.toLowerCase())
     return matchesSport && matchesQuery
@@ -103,7 +119,7 @@ function App() {
     <div className="app-shell">
       <header className="topbar">
         <div className="topbar-inner">
-          <button className="brand" onClick={() => setTab('sports')}><span className="brand-mark"><Zap size={18} fill="currentColor" /></span><span>pulse<span>book</span></span></button>
+          <button className="brand" onClick={() => setTab('sports')}><span className="brand-mark"><Zap size={18} fill="currentColor" /></span><span>mex<span>bet</span></span></button>
           <nav className={mobileMenu ? 'main-nav open' : 'main-nav'}>
             <button className={tab === 'sports' ? 'nav-item active' : 'nav-item'} onClick={() => { setTab('sports'); setMobileMenu(false) }}><Trophy size={17} /> События</button>
             <button className={tab === 'dashboard' ? 'nav-item active' : 'nav-item'} onClick={() => { setTab('dashboard'); setMobileMenu(false) }}><LayoutDashboard size={17} /> Мой профиль</button>
@@ -114,25 +130,25 @@ function App() {
       </header>
 
       <main className="page">
-        {tab === 'sports' && <SportsPage events={filteredEvents} sport={sport} setSport={setSport} query={query} setQuery={setQuery} slip={slip} addToSlip={addToSlip} removeFromSlip={removeFromSlip} stake={stake} setStake={setStake} totalOdds={totalOdds} potentialWin={potentialWin} placeBet={placeBet} />}
+        {tab === 'sports' && <SportsPage events={filteredEvents} apiState={apiState} sport={sport} setSport={setSport} query={query} setQuery={setQuery} slip={slip} addToSlip={addToSlip} removeFromSlip={removeFromSlip} stake={stake} setStake={setStake} totalOdds={totalOdds} potentialWin={potentialWin} placeBet={placeBet} />}
         {tab === 'dashboard' && <Dashboard balance={balance} transactions={transactions} onNavigate={setTab} />}
         {tab === 'admin' && <Admin balance={balance} transactions={transactions} adjustBalance={adjustBalance} />}
       </main>
-      <footer className="footer"><span>© 2025 PulseBook Demo</span><span><LockKeyhole size={13} /> Только виртуальные ставки · Без денежных операций</span><span>Правила демо <CircleHelp size={14} /></span></footer>
+      <footer className="footer"><span>© 2026 MEXBET Demo</span><span><LockKeyhole size={13} /> Только виртуальные ставки · Без денежных операций</span><span>Правила демо <CircleHelp size={14} /></span></footer>
       {notice && <div className="toast"><span className="toast-check">✓</span>{notice}<button onClick={() => setNotice('')}><X size={15} /></button></div>}
     </div>
   )
 }
 
-function SportsPage(props: { events: Event[]; sport: Sport; setSport: (s: Sport) => void; query: string; setQuery: (s: string) => void; slip: Slip[]; addToSlip: (e: Event, m: { label: string; value: string }) => void; removeFromSlip: (id: number) => void; stake: string; setStake: (s: string) => void; totalOdds: number; potentialWin: number; placeBet: () => void }) {
-  const { events, sport, setSport, query, setQuery, slip, addToSlip, removeFromSlip, stake, setStake, totalOdds, potentialWin, placeBet } = props
+function SportsPage(props: { events: Event[]; apiState: 'demo' | 'loading' | 'live'; sport: Sport; setSport: (s: Sport) => void; query: string; setQuery: (s: string) => void; slip: Slip[]; addToSlip: (e: Event, m: { label: string; value: string }) => void; removeFromSlip: (id: number) => void; stake: string; setStake: (s: string) => void; totalOdds: number; potentialWin: number; placeBet: () => void }) {
+  const { events, apiState, sport, setSport, query, setQuery, slip, addToSlip, removeFromSlip, stake, setStake, totalOdds, potentialWin, placeBet } = props
   return <div className="sports-layout">
     <section className="content-column">
-      <div className="eyebrow"><span className="live-dot" /> LIVE ДЕМО <span className="eyebrow-divider" /> Обновлено только что</div>
+      <div className="eyebrow"><span className={apiState === 'live' ? 'live-dot' : 'live-dot muted-dot'} /> {apiState === 'live' ? 'LIVE API-SPORTS' : apiState === 'loading' ? 'ЗАГРУЗКА ЛИНИИ' : 'ДЕМО-ЛИНИЯ'} <span className="eyebrow-divider" /> {apiState === 'live' ? 'Реальные события' : 'Ключ API не подключён'}</div>
       <div className="page-heading"><div><h1>Спортивные события</h1><p>Выберите исход и соберите свой купон</p></div><button className="outline-btn"><SlidersHorizontal size={16} /> Настроить вид</button></div>
       <div className="hero-card"><div className="hero-copy"><span className="hero-label"><Sparkles size={14} /> ВЫБОР ДНЯ</span><h2>Большой футбольный<br /><em>уикенд</em> уже здесь</h2><p>Лучшие матчи европейских лиг в одном месте</p><button className="hero-btn" onClick={() => setSport('Футбол')}>Смотреть матчи <ChevronRight size={16} /></button></div><div className="hero-ball">⚽</div><div className="hero-glow" /></div>
-      <div className="toolbar"><div className="sport-tabs">{(['Все', 'Футбол', 'Хоккей', 'Теннис', 'Баскетбол'] as Sport[]).map((item) => <button key={item} className={sport === item ? 'sport-tab selected' : 'sport-tab'} onClick={() => setSport(item)}>{item === 'Все' ? 'Все виды' : item}</button>)}</div><label className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск команды или лиги" /></label><button className="filter-mobile"><Filter size={16} /></button></div>
-      <div className="data-note"><Trophy size={14} /> В ленте добавлены реальные пары команд КХЛ из календаря на 5–9 октября 2026 года. Коэффициенты — демонстрационные.</div>
+      <div className="toolbar"><div className="sport-tabs">{(['Все', 'Футбол', 'Хоккей', 'Киберспорт', 'Теннис', 'Баскетбол'] as Sport[]).map((item) => <button key={item} className={sport === item ? 'sport-tab selected' : 'sport-tab'} onClick={() => setSport(item)}>{item === 'Все' ? 'Все виды' : item}</button>)}</div><label className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск команды или лиги" /></label><button className="filter-mobile"><Filter size={16} /></button></div>
+      <div className="data-note"><Trophy size={14} /> MEXBET поддерживает API-Sports для футбола и хоккея. Коэффициенты в демо-линии заменяются реальными после добавления `VITE_API_SPORTS_KEY`; киберспорт пока работает на отдельной демо-линии.</div>
       <div className="section-line"><h3>{sport === 'Все' ? 'Все события' : sport} <span>{events.length}</span></h3><button className="sort-btn"><Clock3 size={15} /> Сначала ближайшие <ChevronRight size={14} /></button></div>
       <div className="event-list">{events.map((event) => <EventCard key={event.id} event={event} selected={slip.find((item) => item.eventId === event.id)} onSelect={(market) => addToSlip(event, market)} />)}{!events.length && <div className="empty-state"><Search size={28} /><h3>Ничего не нашли</h3><p>Попробуйте изменить запрос или фильтр</p></div>}</div>
     </section>
