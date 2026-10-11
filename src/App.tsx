@@ -47,12 +47,25 @@ const initialTransactions: Transaction[] = [
   { id: 'TRX-83919', type: 'Ставка', amount: -800, reason: 'Арсенал — Челси · П1', date: 'Вчера, 18:54' },
 ]
 
+const upcomingEvents: Event[] = [
+  { id: 101, sport: 'Футбол', league: 'Лига чемпионов · 12 октября 2026', time: '19:45', home: 'Манчестер Сити', away: 'Реал Мадрид', icon: '⚽', featured: true, markets: [{ label: 'П1', value: '1.72', key: 'home' }, { label: 'X', value: '4.10', key: 'draw' }, { label: 'П2', value: '4.35', key: 'away' }] },
+  { id: 102, sport: 'Футбол', league: 'Лига чемпионов · 12 октября 2026', time: '22:00', home: 'Бавария', away: 'ПСЖ', icon: '⚽', markets: [{ label: 'П1', value: '2.02', key: 'home' }, { label: 'X', value: '3.75', key: 'draw' }, { label: 'П2', value: '3.20', key: 'away' }] },
+  { id: 103, sport: 'Хоккей', league: 'КХЛ · 12 октября 2026', time: '17:00', home: 'Локомотив', away: 'Ак Барс', icon: '🏒', featured: true, markets: [{ label: 'П1', value: '1.86', key: 'home' }, { label: 'X', value: '4.20', key: 'draw' }, { label: 'П2', value: '3.65', key: 'away' }] },
+  { id: 104, sport: 'Хоккей', league: 'КХЛ · 12 октября 2026', time: '19:30', home: 'СКА', away: 'ЦСКА', icon: '🏒', markets: [{ label: 'П1', value: '2.18', key: 'home' }, { label: 'X', value: '4.15', key: 'draw' }, { label: 'П2', value: '2.58', key: 'away' }] },
+  { id: 105, sport: 'Футбол', league: 'Премьер-лига · 13 октября 2026', time: '18:30', home: 'Ливерпуль', away: 'Арсенал', icon: '⚽', markets: [{ label: 'П1', value: '2.15', key: 'home' }, { label: 'X', value: '3.65', key: 'draw' }, { label: 'П2', value: '3.05', key: 'away' }] },
+  { id: 106, sport: 'Хоккей', league: 'КХЛ · 13 октября 2026', time: '17:00', home: 'Динамо Москва', away: 'Трактор', icon: '🏒', markets: [{ label: 'П1', value: '1.78', key: 'home' }, { label: 'X', value: '4.35', key: 'draw' }, { label: 'П2', value: '3.85', key: 'away' }] },
+  { id: 107, sport: 'Киберспорт', league: 'CS2 · 14 октября 2026', time: '18:00', home: 'Natus Vincere', away: 'Team Spirit', icon: '🎮', markets: [{ label: 'П1', value: '1.84', key: 'home' }, { label: 'П2', value: '1.96', key: 'away' }] },
+  { id: 108, sport: 'Киберспорт', league: 'Dota 2 · 14 октября 2026', time: '21:00', home: 'Team Liquid', away: 'Gaimin Gladiators', icon: '🎮', markets: [{ label: 'П1', value: '2.05', key: 'home' }, { label: 'П2', value: '1.76', key: 'away' }] },
+  { id: 109, sport: 'Футбол', league: 'Ла Лига · 15 октября 2026', time: '20:00', home: 'Барселона', away: 'Атлетико Мадрид', icon: '⚽', markets: [{ label: 'П1', value: '1.95', key: 'home' }, { label: 'X', value: '3.80', key: 'draw' }, { label: 'П2', value: '3.60', key: 'away' }] },
+  { id: 110, sport: 'Хоккей', league: 'КХЛ · 15 октября 2026', time: '19:30', home: 'Спартак', away: 'Металлург Мг', icon: '🏒', markets: [{ label: 'П1', value: '2.32', key: 'home' }, { label: 'X', value: '4.25', key: 'draw' }, { label: 'П2', value: '2.42', key: 'away' }] },
+]
+
 const money = (value: number) => `${value.toLocaleString('ru-RU')} ₽`
 
 function App() {
   const [tab, setTab] = useState<Tab>('sports')
   const [sport, setSport] = useState<Sport>('Все')
-  const [liveEvents, setLiveEvents] = useState<Event[]>(events)
+  const [liveEvents, setLiveEvents] = useState<Event[]>(upcomingEvents)
   const [apiState, setApiState] = useState<'demo' | 'loading' | 'live'>('demo')
   const [query, setQuery] = useState('')
   const [slip, setSlip] = useState<Slip[]>([])
@@ -64,6 +77,7 @@ function App() {
   const [notice, setNotice] = useState('')
   const [mobileMenu, setMobileMenu] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+  const [adminAuthorized, setAdminAuthorized] = useState(() => sessionStorage.getItem('mexbet-admin') === '1')
 
   useEffect(() => { localStorage.setItem('pulse-balance', String(balance)) }, [balance])
   useEffect(() => { localStorage.setItem('pulse-transactions', JSON.stringify(transactions)) }, [transactions])
@@ -76,13 +90,22 @@ function App() {
         setLiveEvents(remoteEvents)
         setApiState('live')
       } else {
+        setLiveEvents(upcomingEvents)
         setApiState('demo')
       }
     }).catch(() => {
-      if (!cancelled) setApiState('demo')
+      if (!cancelled) {
+        setLiveEvents(upcomingEvents)
+        setApiState('demo')
+      }
     })
     return () => { cancelled = true }
   }, [])
+  useEffect(() => {
+    const hashId = Number(window.location.hash.replace('#event=', ''))
+    const event = liveEvents.find((item) => item.id === hashId)
+    if (event) setSelectedEvent(event)
+  }, [liveEvents])
   useEffect(() => { if (notice) { const timer = setTimeout(() => setNotice(''), 3200); return () => clearTimeout(timer) } }, [notice])
 
   const filteredEvents = useMemo(() => liveEvents.filter((event) => {
@@ -115,6 +138,9 @@ function App() {
     setTransactions((list) => [{ id: `ADM-${Date.now().toString().slice(-5)}`, type: amount > 0 ? 'Пополнение' : 'Ставка', amount, reason, date: 'Только что' }, ...list])
     setNotice('Баланс обновлён, запись добавлена в журнал')
   }
+  const openEvent = (event: Event) => {
+    window.open(`${window.location.pathname}#event=${event.id}`, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <div className="app-shell">
@@ -131,9 +157,9 @@ function App() {
       </header>
 
       <main className="page">
-        {tab === 'sports' && <SportsPage events={filteredEvents} apiState={apiState} sport={sport} setSport={setSport} query={query} setQuery={setQuery} slip={slip} addToSlip={addToSlip} openEvent={setSelectedEvent} removeFromSlip={removeFromSlip} stake={stake} setStake={setStake} totalOdds={totalOdds} potentialWin={potentialWin} placeBet={placeBet} />}
+        {tab === 'sports' && <SportsPage events={filteredEvents} apiState={apiState} sport={sport} setSport={setSport} query={query} setQuery={setQuery} slip={slip} addToSlip={addToSlip} openEvent={openEvent} removeFromSlip={removeFromSlip} stake={stake} setStake={setStake} totalOdds={totalOdds} potentialWin={potentialWin} placeBet={placeBet} />}
         {tab === 'dashboard' && <Dashboard balance={balance} transactions={transactions} onNavigate={setTab} />}
-        {tab === 'admin' && <Admin balance={balance} transactions={transactions} adjustBalance={adjustBalance} />}
+        {tab === 'admin' && (adminAuthorized ? <Admin balance={balance} transactions={transactions} adjustBalance={adjustBalance} /> : <AdminLogin onAuthorize={() => { sessionStorage.setItem('mexbet-admin', '1'); setAdminAuthorized(true) }} />)}
       </main>
       <footer className="footer"><span>© 2026 MEXBET Demo</span><span><LockKeyhole size={13} /> Только виртуальные ставки · Без денежных операций</span><span>Правила демо <CircleHelp size={14} /></span></footer>
       {notice && <div className="toast"><span className="toast-check">✓</span>{notice}<button onClick={() => setNotice('')}><X size={15} /></button></div>}
@@ -182,6 +208,16 @@ function Admin({ balance, transactions, adjustBalance }: { balance: number; tran
   const [amount, setAmount] = useState('5000')
   const [reason, setReason] = useState('Тестовое пополнение')
   return <div className="admin-page"><div className="eyebrow"><ShieldCheck size={14} /> CONTROL CENTER <span className="eyebrow-divider" /> Только для локального демо</div><div className="page-heading"><div><h1>Админ-панель</h1><p>Управление виртуальным балансом и аудит действий</p></div><span className="admin-status"><i /> Система в норме</span></div><div className="admin-warning"><ShieldCheck size={19} /><div><strong>Режим демонстрации</strong><p>Все операции выполняются только в браузере и сохраняются в localStorage. Реальных денег и платежей здесь нет.</p></div></div><div className="admin-grid"><section className="admin-adjust"><div className="panel-heading"><div><h2>Корректировка баланса</h2><p>Изменения требуют явного назначения</p></div><Wallet size={20} /></div><div className="current-balance"><span>Текущий баланс пользователя</span><strong>{money(balance)}</strong></div><label className="form-label">Сумма изменения<input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d-]/g, ''))} type="text" /><small>Используйте минус для списания</small></label><label className="form-label">Причина операции<textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} /></label><div className="admin-buttons"><button className="add-btn" onClick={() => adjustBalance(Number(amount), reason)}><Plus size={16} /> Применить изменение</button><button className="quick-amount" onClick={() => setAmount('1000')}>+1 000 ₽</button><button className="quick-amount" onClick={() => setAmount('5000')}>+5 000 ₽</button></div></section><section className="admin-audit"><div className="panel-heading"><div><h2>Журнал аудита</h2><p>Последние действия · только добавление</p></div><ClipboardList size={20} /></div><div className="audit-list">{transactions.slice(0, 7).map((tx) => <div className="audit-row" key={tx.id}><div className="audit-check">✓</div><div><strong>{tx.reason}</strong><span>{tx.id} · {tx.date}</span></div><b className={tx.amount > 0 ? 'positive' : ''}>{tx.amount > 0 ? '+' : ''}{money(tx.amount)}</b></div>)}</div></section></div></div>
+}
+
+function AdminLogin({ onAuthorize }: { onAuthorize: () => void }) {
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState('')
+  const submit = () => {
+    if (pin === (import.meta.env.VITE_ADMIN_PIN || 'MEXBET-ADMIN')) onAuthorize()
+    else setError('Неверный demo-PIN')
+  }
+  return <div className="admin-login"><div className="admin-login-card"><ShieldCheck size={30} /><h1>Закрытая админ-зона</h1><p>Введите demo-PIN владельца платформы. Это не является настоящей защитой для production.</p><input value={pin} onChange={(event) => setPin(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && submit()} placeholder="Demo-PIN" type="password" /><button className="add-btn" onClick={submit}>Войти в админ-панель</button>{error && <small className="error-text">{error}</small>}<span>Локальный demo-PIN по умолчанию: <b>MEXBET-ADMIN</b></span></div></div>
 }
 
 export default App
