@@ -27,6 +27,8 @@ type ApiOdds = {
 
 const apiKey = import.meta.env.VITE_API_SPORTS_KEY as string | undefined
 const headers = apiKey ? { 'x-apisports-key': apiKey } : undefined
+const cacheKey = 'mexbet-api-events-v1'
+const cacheTtlMs = 10 * 60 * 1000
 
 const fallbackMarkets = [
   { label: 'П1', value: '1.90', key: 'home' },
@@ -83,6 +85,12 @@ const withLiveOdds = async (event: Event, url: string): Promise<Event> => {
 
 export async function loadApiSportsEvents(): Promise<Event[]> {
   if (!apiKey) return []
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null') as { savedAt?: number; events?: Event[] } | null
+    if (cached?.savedAt && cached.events?.length && Date.now() - cached.savedAt < cacheTtlMs) return cached.events
+  } catch {
+    // Ignore an invalid browser cache and request a fresh line.
+  }
 
   const dates = Array.from({ length: 7 }, (_, index) => {
     const date = new Date()
@@ -118,5 +126,11 @@ export async function loadApiSportsEvents(): Promise<Event[]> {
       : `https://v3.football.api-sports.io/odds?fixture=${event.id}`
     return withLiveOdds(event, endpoint)
   }))
-  return [...enriched, ...events.slice(30)]
+  const result = [...enriched, ...events.slice(30)]
+  try {
+    localStorage.setItem(cacheKey, JSON.stringify({ savedAt: Date.now(), events: result }))
+  } catch {
+    // The line remains usable when browser storage is unavailable.
+  }
+  return result
 }
