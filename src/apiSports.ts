@@ -47,6 +47,7 @@ const formatEvent = (
   sport,
   league: `${league} · API-Sports`,
   time: date ? new Date(date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '—',
+  startAt: date,
   home,
   away,
   icon: sport === 'Хоккей' ? '🏒' : sport === 'Футбол' ? '⚽' : '🎮',
@@ -109,7 +110,7 @@ export async function loadApiSportsEvents(): Promise<Event[]> {
       if (!item.id || !home || !away || !isUpcoming(item.status?.short)) return []
       return [formatEvent(item.id, 'Хоккей', item.league?.name || 'Хоккей', item.date, home, away, item.status?.short)]
     }),
-  ].sort((a, b) => a.time.localeCompare(b.time))
+  ].sort((a, b) => (a.startAt || '').localeCompare(b.startAt || ''))
 
   const enriched = await Promise.all(events.slice(0, 30).map((event) => {
     const endpoint = event.sport === 'Хоккей'

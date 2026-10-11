@@ -5,6 +5,7 @@ export type Event = {
   sport: Exclude<Sport, 'Все'>
   league: string
   time: string
+  startAt?: string
   status?: string
   home: string
   away: string
