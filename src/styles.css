@@ -35,6 +35,19 @@ body { background: radial-gradient(circle at 80% -10%, rgba(91,61,150,.2), trans
 @media(max-width:900px){.topbar-inner{padding:0 20px;gap:25px}.main-nav{gap:15px}.page{padding:28px 20px 40px}.sports-layout{grid-template-columns:1fr}.betslip{position:relative;top:auto}.footer{padding:0 20px 22px}.hero-ball{right:35px}.dashboard-grid,.admin-grid{grid-template-columns:1fr}}
 @media(max-width:650px){.topbar{height:62px}.topbar-inner{padding:0 16px}.main-nav{display:none;position:absolute;left:10px;right:10px;top:58px;background:white;border:1px solid var(--line);border-radius:10px;padding:8px;box-shadow:0 8px 20px #20365b14;flex-direction:column;gap:0}.main-nav.open{display:flex}.nav-item{padding:12px}.nav-item.active:after{display:none}.mobile-menu{display:block;color:#77839a}.header-actions{gap:8px}.header-balance{display:none}.page{padding:24px 14px 34px}.page-heading{align-items:flex-start;gap:15px}.page-heading h1{font-size:25px}.outline-btn{font-size:0;padding:9px}.outline-btn svg{margin:0}.hero-card{height:200px;padding:24px 21px}.hero-card h2{font-size:23px}.hero-ball{right:-12px;top:40px;opacity:.7}.toolbar{flex-wrap:wrap}.sport-tabs{order:2;overflow:auto;width:100%;padding-bottom:2px}.sport-tab{white-space:nowrap;padding:8px 10px}.search{width:calc(100% - 44px)}.filter-mobile{display:grid;place-items:center;border:1px solid var(--line);height:37px;width:37px;border-radius:8px;color:#78849b}.section-line{align-items:flex-start;gap:10px}.sort-btn{font-size:0}.sort-btn svg:last-child{display:none}.teams>div:not(.versus){min-width:105px}.teams strong{font-size:11px}.markets{grid-template-columns:repeat(3,1fr)}.all-markets{grid-column:1/-1}.hot-badge{display:none}.footer{font-size:9px;gap:8px;flex-wrap:wrap}.footer span:nth-child(2){order:3;width:100%}.stats-grid{grid-template-columns:1fr 1fr}.balance-card{grid-column:1/-1}.stat-card{padding:16px}.stat-card>strong{font-size:20px}.dashboard-grid{margin-top:12px}.transaction time{display:none}.admin-buttons{flex-wrap:wrap}.toast{bottom:16px;right:14px;left:14px}.toast button{margin-left:auto}}
 
+/* Keep every event card readable and visibly separated. */
+.event-list { gap: 16px; }
+.event-card { color: #263653; background: #ffffff; border: 1px solid #dfe5ef; min-height: 180px; }
+.event-card .event-title strong, .event-card .teams strong { color: #263653; }
+.event-card .event-title small, .event-card .event-meta strong { color: #7b879b; }
+.event-card .teams-button { color: #263653; }
+.event-card .sport-icon { background: #eef1f8; }
+.event-card .market, .event-card .all-markets { background: #f7f9fc; color: #5e6c82; border-color: #d8e0eb; }
+.event-card .market strong { color: #263653; }
+.event-card .market:hover, .event-card .selected-market { background: #eeecff; border-color: #8f86ed; }
+.event-card .selected-market strong, .event-card .selected-market span { color: #5548d3; }
+.event-card .all-markets:hover { background: #eeecff; color: #5548d3; }
+
 /* MEXBET premium dark theme overrides */
 :root { --ink:#f5f7fb; --muted:#9aa6ba; --line:rgba(255,255,255,.09); --page:#080c14; --accent:#c7a45a; }
 body { background:radial-gradient(circle at 80% -10%,rgba(91,61,150,.2),transparent 35%),var(--page); color:var(--ink); }
